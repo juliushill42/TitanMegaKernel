@@ -1,0 +1,39 @@
+{
+  "name": "good_linear",
+  "nodes": [
+    {
+      "id": 0,
+      "kind": { "Op": { "Elementwise": { "op": "id" } } },
+      "inputs": [],
+      "outputs": [
+        { "name": "x0", "shape": [8], "dtype": "F32", "space": "Hbm" }
+      ],
+      "sm": 0,
+      "waits_on": []
+    },
+    {
+      "id": 1,
+      "kind": { "Op": { "Elementwise": { "op": "relu" } } },
+      "inputs": [
+        { "name": "x0", "shape": [8], "dtype": "F32", "space": "Hbm" }
+      ],
+      "outputs": [
+        { "name": "x1", "shape": [8], "dtype": "F32", "space": "Hbm" }
+      ],
+      "sm": 1,
+      "waits_on": [0]
+    },
+    {
+      "id": 2,
+      "kind": { "Op": { "Elementwise": { "op": "gelu" } } },
+      "inputs": [
+        { "name": "x1", "shape": [8], "dtype": "F32", "space": "Hbm" }
+      ],
+      "outputs": [
+        { "name": "x2", "shape": [8], "dtype": "F32", "space": "Hbm" }
+      ],
+      "sm": 2,
+      "waits_on": [1]
+    }
+  ]
+}
