@@ -1,0 +1,28 @@
+name: TitanMegaKernel Proof
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cargo test
+        run: cargo test --locked
+
+      - name: Adversarial demo
+        run: cargo run --locked -- demo
+
+      - name: Validate sample
+        run: cargo run --locked -- validate linear.json --verbose
