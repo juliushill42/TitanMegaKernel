@@ -8,6 +8,7 @@
 //! suite is reproducible and CI-stable.
 
 use crate::ir::*;
+#[cfg(test)]
 use crate::validator::{validate, ValidationError};
 
 fn t(name: &str, space: MemSpace) -> Tensor {

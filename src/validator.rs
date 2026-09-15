@@ -140,7 +140,7 @@ fn accumulate_tensors(
 
 /// DFS-based cycle detection over the `waits_on` graph.
 fn detect_cycles(
-    schedule: &Schedule,
+    _schedule: &Schedule,
     index: &HashMap<NodeId, &Node>,
 ) -> Result<(), ValidationError> {
     #[derive(Clone, Copy, PartialEq)]
@@ -264,7 +264,10 @@ fn tensors_overlap(a: &Node, b: &Node) -> bool {
 
 /// Two unordered nodes race if they touch the same tensor in the same
 /// memory space and at least one of them writes it.
-fn check_races(schedule: &Schedule, index: &HashMap<NodeId, &Node>) -> Result<(), ValidationError> {
+fn check_races(
+    _schedule: &Schedule,
+    index: &HashMap<NodeId, &Node>,
+) -> Result<(), ValidationError> {
     let reach = transitive_reach(index);
     let ids: Vec<NodeId> = index.keys().copied().collect();
 
