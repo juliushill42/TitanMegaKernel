@@ -1,4 +1,4 @@
-# AURORA
+# TitanMegaKernel
 
 [![TitanMegaKernel Proof](https://github.com/juliushill42/TitanMegaKernel/actions/workflows/verify.yml/badge.svg)](https://github.com/juliushill42/TitanMegaKernel/actions/workflows/verify.yml)
 
