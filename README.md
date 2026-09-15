@@ -4,7 +4,7 @@ TitanMegaKernel validates compute schedules before code generation and rejects u
 
 [![TitanMegaKernel Proof](https://github.com/juliushill42/TitanMegaKernel/actions/workflows/verify.yml/badge.svg)](https://github.com/juliushill42/TitanMegaKernel/actions/workflows/verify.yml)
 
-### A Recursive, Hardware-Agnostic Megakernel Schedule IR with Static Deadlock/Race Certification
+### Validated compute schedules with recursive safety checks and CUDA code generation
 
 > **Built by Julius Cameron Hill — TitanU AI LLC**
 > Patent Ref: JCH-2026-002 (pending) | Companion: JCH-2026-001
