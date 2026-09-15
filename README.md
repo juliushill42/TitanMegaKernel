@@ -16,7 +16,7 @@ TitanMegaKernel validates compute schedules before code generation and rejects u
 
 AURORA is a system that takes an AI model's execution plan, **mathematically proves it is safe** (no deadlocks, no data races, no crashes — before a single line runs), and then generates working code for **any hardware target** from that single certified proof.
 
-Same proof. CPU or GPU. One certificate that covers both.
+The validator produces one deterministic schedule fingerprint before hardware-specific code generation.
 
 ---
 
@@ -33,8 +33,8 @@ AURORA generalizes it:
 | Validator | ✅ Static, certified | ✅ Static, certified + **recursive** |
 | CPU target | ❌ | Not verified in this release |
 | NVIDIA GPU | ✅ Fused cooperative kernel | ✅ Single-stream CUDA (fused next) |
-| AMD / Apple | ❌ | 🔜 Roadmap |
-| Hardware lock-in | NVIDIA only | **None** |
+| AMD / Apple | ❌ | Not verified in this release |
+| Hardware target | NVIDIA only | CUDA generation verified; other targets not verified |
 | Cross-target proof | ❌ | ✅ SHA-256 fingerprint |
 
 ---
@@ -214,9 +214,9 @@ titanmk fingerprint schedule.json
 # → a7f3c91b2e048d...
 ```
 
-Because the SHA-256 fingerprint is computed from the canonical schedule **before any codegen**, two binaries — one AVX2, one CUDA — built from the same fingerprint are provably executing the identical validated dependency graph.
+Because the SHA-256 fingerprint is computed from the canonical schedule **before any codegen**, the fingerprint identifies the same validated schedule before target-specific code generation.
 
-The proof is portable. The machine code is not. That distinction is the moat.
+The validated schedule is identified independently of the generated target code.
 
 ---
 
@@ -253,7 +253,7 @@ Founder & Sole Developer — TitanU AI LLC
 [titanuai.com](https://titanuai.com)
 
 Self-taught. No CS degree. Started October 2025.
-This is what sovereign infrastructure looks like.
+
 
 ---
 
