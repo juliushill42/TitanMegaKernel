@@ -31,7 +31,7 @@ AURORA generalizes it:
 | | AMK (RightNow AI) | AURORA (TitanU AI) |
 |---|---|---|
 | Validator | ✅ Static, certified | ✅ Static, certified + **recursive** |
-| CPU target | ❌ | ✅ Zig / AVX2 |
+| CPU target | ❌ | Not verified in this release |
 | NVIDIA GPU | ✅ Fused cooperative kernel | ✅ Single-stream CUDA (fused next) |
 | AMD / Apple | ❌ | 🔜 Roadmap |
 | Hardware lock-in | NVIDIA only | **None** |
