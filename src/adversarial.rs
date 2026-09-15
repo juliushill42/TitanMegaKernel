@@ -11,7 +11,12 @@ use crate::ir::*;
 use crate::validator::{validate, ValidationError};
 
 fn t(name: &str, space: MemSpace) -> Tensor {
-    Tensor { name: name.into(), shape: vec![1], dtype: DType::F32, space }
+    Tensor {
+        name: name.into(),
+        shape: vec![1],
+        dtype: DType::F32,
+        space,
+    }
 }
 
 fn op_node(id: NodeId, sm: SmId, waits: &[NodeId], ins: Vec<Tensor>, outs: Vec<Tensor>) -> Node {
@@ -30,8 +35,20 @@ fn op_node(id: NodeId, sm: SmId, waits: &[NodeId], ins: Vec<Tensor>, outs: Vec<T
 pub fn good_linear() -> Schedule {
     let mut s = Schedule::new("good_linear");
     s.push(op_node(0, 0, &[], vec![], vec![t("x0", MemSpace::Hbm)]));
-    s.push(op_node(1, 1, &[0], vec![t("x0", MemSpace::Hbm)], vec![t("x1", MemSpace::Hbm)]));
-    s.push(op_node(2, 2, &[1], vec![t("x1", MemSpace::Hbm)], vec![t("x2", MemSpace::Hbm)]));
+    s.push(op_node(
+        1,
+        1,
+        &[0],
+        vec![t("x0", MemSpace::Hbm)],
+        vec![t("x1", MemSpace::Hbm)],
+    ));
+    s.push(op_node(
+        2,
+        2,
+        &[1],
+        vec![t("x1", MemSpace::Hbm)],
+        vec![t("x2", MemSpace::Hbm)],
+    ));
     s
 }
 
@@ -55,8 +72,20 @@ pub fn bad_dangling_wait() -> Schedule {
 /// since they're co-located).
 pub fn bad_sm_conflict() -> Schedule {
     let mut s = Schedule::new("bad_sm_conflict");
-    s.push(op_node(0, 0, &[], vec![], vec![t("shared", MemSpace::SharedL1)]));
-    s.push(op_node(1, 0, &[], vec![], vec![t("shared", MemSpace::SharedL1)]));
+    s.push(op_node(
+        0,
+        0,
+        &[],
+        vec![],
+        vec![t("shared", MemSpace::SharedL1)],
+    ));
+    s.push(op_node(
+        1,
+        0,
+        &[],
+        vec![],
+        vec![t("shared", MemSpace::SharedL1)],
+    ));
     s
 }
 
@@ -195,16 +224,19 @@ mod tests {
         // just confirm a cyclic schedule still produces a Cycle error
         // from cuda_codegen's own topo sort (defense in depth).
         let err = crate::cuda_codegen::generate(&bad_cycle(), 8).unwrap_err();
-        assert!(matches!(err, crate::cuda_codegen::CudaCodegenError::Cycle(_)));
+        assert!(matches!(
+            err,
+            crate::cuda_codegen::CudaCodegenError::Cycle(_)
+        ));
     }
 
     #[test]
     fn cuda_codegen_nested_repeated_block_inlines_recursively() {
-        let src = crate::cuda_codegen::generate(&good_nested_repeated_block(), 8).expect("codegen ok");
+        let src =
+            crate::cuda_codegen::generate(&good_nested_repeated_block(), 8).expect("codegen ok");
         // Two inlined sub-schedule regions, each containing the 3-node
         // good_linear body.
         let occurrences = src.matches("sub-schedule: good_linear").count();
         assert_eq!(occurrences, 2);
     }
-
 }

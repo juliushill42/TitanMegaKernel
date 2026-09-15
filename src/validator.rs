@@ -34,10 +34,17 @@ pub enum ValidationError {
     Cycle(NodeId),
     #[error("node {0} waits on non-existent node {1}")]
     DanglingWait(NodeId, NodeId),
-    #[error("SM {sm} ordering conflict: node {a} and node {b} have contradictory order constraints")]
+    #[error(
+        "SM {sm} ordering conflict: node {a} and node {b} have contradictory order constraints"
+    )]
     SmOrderConflict { sm: u32, a: NodeId, b: NodeId },
     #[error("race condition: node {a} and node {b} concurrently access tensor '{tensor}' in {space:?} with at least one write")]
-    Race { a: NodeId, b: NodeId, tensor: String, space: MemSpace },
+    Race {
+        a: NodeId,
+        b: NodeId,
+        tensor: String,
+        space: MemSpace,
+    },
     #[error("nested sub-schedule '{0}' failed validation: {1}")]
     NestedFailure(String, Box<ValidationError>),
 }
@@ -68,9 +75,8 @@ pub fn validate(schedule: &Schedule) -> Result<Certificate, ValidationError> {
     // 1. Recursively validate every nested SubSchedule first.
     for node in &schedule.nodes {
         if let NodeKind::SubSchedule(sub) = &node.kind {
-            validate(sub).map_err(|e| {
-                ValidationError::NestedFailure(sub.name.clone(), Box::new(e))
-            })?;
+            validate(sub)
+                .map_err(|e| ValidationError::NestedFailure(sub.name.clone(), Box::new(e)))?;
         }
     }
 
@@ -116,7 +122,11 @@ pub fn validate(schedule: &Schedule) -> Result<Certificate, ValidationError> {
     })
 }
 
-fn accumulate_tensors(map: &mut HashMap<String, TensorAccess>, tensors: &[Tensor], is_output: bool) {
+fn accumulate_tensors(
+    map: &mut HashMap<String, TensorAccess>,
+    tensors: &[Tensor],
+    is_output: bool,
+) {
     for t in tensors {
         let entry = map.entry(t.name.clone()).or_default();
         if is_output {
@@ -129,9 +139,16 @@ fn accumulate_tensors(map: &mut HashMap<String, TensorAccess>, tensors: &[Tensor
 }
 
 /// DFS-based cycle detection over the `waits_on` graph.
-fn detect_cycles(schedule: &Schedule, index: &HashMap<NodeId, &Node>) -> Result<(), ValidationError> {
+fn detect_cycles(
+    schedule: &Schedule,
+    index: &HashMap<NodeId, &Node>,
+) -> Result<(), ValidationError> {
     #[derive(Clone, Copy, PartialEq)]
-    enum Color { White, Gray, Black }
+    enum Color {
+        White,
+        Gray,
+        Black,
+    }
 
     let mut color: HashMap<NodeId, Color> = index.keys().map(|&id| (id, Color::White)).collect();
 
@@ -176,7 +193,10 @@ fn detect_cycles(schedule: &Schedule, index: &HashMap<NodeId, &Node>) -> Result<
 /// the same SM with NO ordering relation at all, which is a hazard if
 /// they touch overlapping memory (the SM's single instruction stream
 /// would need *some* order, but the schedule doesn't specify one).
-fn check_sm_order(schedule: &Schedule, index: &HashMap<NodeId, &Node>) -> Result<(), ValidationError> {
+fn check_sm_order(
+    schedule: &Schedule,
+    index: &HashMap<NodeId, &Node>,
+) -> Result<(), ValidationError> {
     let reach = transitive_reach(index);
 
     let mut by_sm: HashMap<u32, Vec<NodeId>> = HashMap::new();
@@ -237,7 +257,9 @@ fn transitive_reach(index: &HashMap<NodeId, &Node>) -> HashMap<NodeId, HashSet<N
 fn tensors_overlap(a: &Node, b: &Node) -> bool {
     let a_all: Vec<&Tensor> = a.inputs.iter().chain(a.outputs.iter()).collect();
     let b_all: Vec<&Tensor> = b.inputs.iter().chain(b.outputs.iter()).collect();
-    a_all.iter().any(|ta| b_all.iter().any(|tb| ta.name == tb.name))
+    a_all
+        .iter()
+        .any(|ta| b_all.iter().any(|tb| ta.name == tb.name))
 }
 
 /// Two unordered nodes race if they touch the same tensor in the same

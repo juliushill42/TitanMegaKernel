@@ -14,7 +14,7 @@ use std::collections::{HashMap, HashSet};
 pub type NodeId = u32;
 pub type SmId = u32; // Streaming-multiprocessor / compute-unit id, hardware agnostic
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MemSpace {
     Hbm,
     SharedL1,
@@ -41,11 +41,25 @@ pub enum DType {
 /// variant to a target-specific kernel fragment.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum OpKind {
-    MatMul { m: u64, n: u64, k: u64 },
-    RmsNorm { dim: u64 },
-    Softmax { dim: u64 },
-    Attention { heads: u64, head_dim: u64, seq_len: u64 },
-    Elementwise { op: String },
+    MatMul {
+        m: u64,
+        n: u64,
+        k: u64,
+    },
+    RmsNorm {
+        dim: u64,
+    },
+    Softmax {
+        dim: u64,
+    },
+    Attention {
+        heads: u64,
+        head_dim: u64,
+        seq_len: u64,
+    },
+    Elementwise {
+        op: String,
+    },
     Barrier,
 }
 
@@ -79,7 +93,10 @@ pub struct Schedule {
 
 impl Schedule {
     pub fn new(name: impl Into<String>) -> Self {
-        Schedule { name: name.into(), nodes: Vec::new() }
+        Schedule {
+            name: name.into(),
+            nodes: Vec::new(),
+        }
     }
 
     pub fn push(&mut self, node: Node) {

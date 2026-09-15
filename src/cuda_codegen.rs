@@ -47,7 +47,11 @@ fn topo_sort(schedule: &Schedule) -> Result<Vec<&Node>, CudaCodegenError> {
         v.sort_unstable();
     }
 
-    let mut queue: Vec<u32> = in_degree.iter().filter(|(_, &d)| d == 0).map(|(&id, _)| id).collect();
+    let mut queue: Vec<u32> = in_degree
+        .iter()
+        .filter(|(_, &d)| d == 0)
+        .map(|(&id, _)| id)
+        .collect();
     queue.sort_unstable();
 
     let mut out = Vec::with_capacity(schedule.nodes.len());
@@ -75,7 +79,15 @@ fn topo_sort(schedule: &Schedule) -> Result<Vec<&Node>, CudaCodegenError> {
 }
 
 fn sanitize(name: &str) -> String {
-    name.chars().map(|c| if c.is_alphanumeric() || c == '_' { c } else { '_' }).collect()
+    name.chars()
+        .map(|c| {
+            if c.is_alphanumeric() || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect()
 }
 
 fn elementwise_op_code(op: &str) -> i32 {
@@ -88,7 +100,12 @@ fn elementwise_op_code(op: &str) -> i32 {
     }
 }
 
-fn emit_op(out: &mut String, node: &Node, op: &OpKind, indent: &str) -> Result<(), CudaCodegenError> {
+fn emit_op(
+    out: &mut String,
+    node: &Node,
+    op: &OpKind,
+    indent: &str,
+) -> Result<(), CudaCodegenError> {
     match op {
         OpKind::MatMul { m, n, k } => {
             if node.outputs.is_empty() || node.inputs.len() < 2 {
@@ -97,7 +114,10 @@ fn emit_op(out: &mut String, node: &Node, op: &OpKind, indent: &str) -> Result<(
             let o = sanitize(&node.outputs[0].name);
             let a = sanitize(&node.inputs[0].name);
             let b = sanitize(&node.inputs[1].name);
-            let _ = writeln!(out, "{indent}titan_matmul({o}, {a}, {b}, {m}, {n}, {k}, stream);");
+            let _ = writeln!(
+                out,
+                "{indent}titan_matmul({o}, {a}, {b}, {m}, {n}, {k}, stream);"
+            );
         }
         OpKind::RmsNorm { dim } => {
             if node.outputs.is_empty() || node.inputs.is_empty() {
@@ -105,7 +125,10 @@ fn emit_op(out: &mut String, node: &Node, op: &OpKind, indent: &str) -> Result<(
             }
             let o = sanitize(&node.outputs[0].name);
             let i = sanitize(&node.inputs[0].name);
-            let _ = writeln!(out, "{indent}titan_rmsnorm({o}, {i}, /*rows=*/1, {dim}, stream);");
+            let _ = writeln!(
+                out,
+                "{indent}titan_rmsnorm({o}, {i}, /*rows=*/1, {dim}, stream);"
+            );
         }
         OpKind::Softmax { dim } => {
             if node.outputs.is_empty() || node.inputs.is_empty() {
@@ -113,9 +136,16 @@ fn emit_op(out: &mut String, node: &Node, op: &OpKind, indent: &str) -> Result<(
             }
             let o = sanitize(&node.outputs[0].name);
             let i = sanitize(&node.inputs[0].name);
-            let _ = writeln!(out, "{indent}titan_softmax({o}, {i}, /*rows=*/1, {dim}, stream);");
+            let _ = writeln!(
+                out,
+                "{indent}titan_softmax({o}, {i}, /*rows=*/1, {dim}, stream);"
+            );
         }
-        OpKind::Attention { heads, head_dim, seq_len } => {
+        OpKind::Attention {
+            heads,
+            head_dim,
+            seq_len,
+        } => {
             if node.outputs.is_empty() || node.inputs.len() < 3 {
                 return Err(CudaCodegenError::BadArity(node.id, op.clone()));
             }
@@ -155,12 +185,21 @@ fn emit_op(out: &mut String, node: &Node, op: &OpKind, indent: &str) -> Result<(
     Ok(())
 }
 
-fn emit_schedule(out: &mut String, schedule: &Schedule, depth: usize) -> Result<(), CudaCodegenError> {
+fn emit_schedule(
+    out: &mut String,
+    schedule: &Schedule,
+    depth: usize,
+) -> Result<(), CudaCodegenError> {
     let indent = "    ".repeat(depth + 1);
     let ordered = topo_sort(schedule)?;
 
     if depth > 0 {
-        let _ = writeln!(out, "{}{{ // sub-schedule: {}", "    ".repeat(depth), schedule.name);
+        let _ = writeln!(
+            out,
+            "{}{{ // sub-schedule: {}",
+            "    ".repeat(depth),
+            schedule.name
+        );
     }
 
     for node in ordered {
@@ -170,7 +209,11 @@ fn emit_schedule(out: &mut String, schedule: &Schedule, depth: usize) -> Result<
                 emit_op(out, node, op, &indent)?;
             }
             NodeKind::SubSchedule(sub) => {
-                let _ = writeln!(out, "{indent}// node {} -> inlined sub-schedule '{}'", node.id, sub.name);
+                let _ = writeln!(
+                    out,
+                    "{indent}// node {} -> inlined sub-schedule '{}'",
+                    node.id, sub.name
+                );
                 emit_schedule(out, sub, depth + 1)?;
             }
         }
@@ -198,7 +241,10 @@ fn collect_tensors(schedule: &Schedule, names: &mut HashSet<String>) {
 /// Generate both the `.cu` source and a header listing TensorSet
 /// field pointers (`{&t.x0, &t.x1, ...}`), for the host harness to
 /// allocate/iterate without hand-listing tensor names.
-pub fn generate_with_fields(schedule: &Schedule, tensor_len: u64) -> Result<(String, String), CudaCodegenError> {
+pub fn generate_with_fields(
+    schedule: &Schedule,
+    tensor_len: u64,
+) -> Result<(String, String), CudaCodegenError> {
     let cu = generate(schedule, tensor_len)?;
 
     let mut names: HashSet<String> = HashSet::new();
@@ -207,7 +253,10 @@ pub fn generate_with_fields(schedule: &Schedule, tensor_len: u64) -> Result<(Str
     sorted_names.sort();
 
     let mut fields = String::new();
-    let _ = writeln!(fields, "// AUTO-GENERATED: TensorSet field pointers, in declaration order.");
+    let _ = writeln!(
+        fields,
+        "// AUTO-GENERATED: TensorSet field pointers, in declaration order."
+    );
     for name in &sorted_names {
         let _ = writeln!(fields, "&t.{name},");
     }
@@ -226,26 +275,44 @@ pub fn generate(schedule: &Schedule, tensor_len: u64) -> Result<String, CudaCode
     sorted_names.sort();
 
     let mut out = String::new();
-    let _ = writeln!(out, "// AUTO-GENERATED by titanmk gen-cuda. DO NOT EDIT BY HAND.");
+    let _ = writeln!(
+        out,
+        "// AUTO-GENERATED by titanmk gen-cuda. DO NOT EDIT BY HAND."
+    );
     let _ = writeln!(out, "// Source schedule: {}", schedule.name);
     let _ = writeln!(out, "#include \"titan_kernels.cuh\"");
     let _ = writeln!(out, "#include <cstdio>");
     let _ = writeln!(out);
     let _ = writeln!(out, "#define TITAN_TENSOR_LEN {tensor_len}ULL");
     let _ = writeln!(out);
-    let _ = writeln!(out, "inline void titan_zero_init(float* ptr, uint64_t len, cudaStream_t stream) {{");
-    let _ = writeln!(out, "    cudaMemsetAsync(ptr, 0, len * sizeof(float), stream);");
+    let _ = writeln!(
+        out,
+        "inline void titan_zero_init(float* ptr, uint64_t len, cudaStream_t stream) {{"
+    );
+    let _ = writeln!(
+        out,
+        "    cudaMemsetAsync(ptr, 0, len * sizeof(float), stream);"
+    );
     let _ = writeln!(out, "}}");
     let _ = writeln!(out);
-    let _ = writeln!(out, "// TensorSet: device pointers for every tensor in the schedule's");
-    let _ = writeln!(out, "// aggregate interface. Caller (host) allocates with cudaMalloc.");
+    let _ = writeln!(
+        out,
+        "// TensorSet: device pointers for every tensor in the schedule's"
+    );
+    let _ = writeln!(
+        out,
+        "// aggregate interface. Caller (host) allocates with cudaMalloc."
+    );
     let _ = writeln!(out, "struct TensorSet {{");
     for name in &sorted_names {
         let _ = writeln!(out, "    float* {name};");
     }
     let _ = writeln!(out, "}};");
     let _ = writeln!(out);
-    let _ = writeln!(out, "void run_megakernel(const TensorSet& t, cudaStream_t stream) {{");
+    let _ = writeln!(
+        out,
+        "void run_megakernel(const TensorSet& t, cudaStream_t stream) {{"
+    );
     for name in &sorted_names {
         let _ = writeln!(out, "    float* {name} = t.{name};");
     }

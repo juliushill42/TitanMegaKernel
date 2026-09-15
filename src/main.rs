@@ -6,7 +6,11 @@ use titanmk::ir::Schedule;
 use titanmk::validator::validate;
 
 #[derive(Parser)]
-#[command(name = "titanmk", version, about = "Titan Hardware-Agnostic Megakernel Schedule Validator")]
+#[command(
+    name = "titanmk",
+    version,
+    about = "Titan Hardware-Agnostic Megakernel Schedule Validator"
+)]
 struct Cli {
     #[command(subcommand)]
     cmd: Commands,
@@ -24,9 +28,7 @@ enum Commands {
         verbose: bool,
     },
     /// Print the SHA-256 fingerprint of a schedule without full validation.
-    Fingerprint {
-        path: PathBuf,
-    },
+    Fingerprint { path: PathBuf },
     /// Run the built-in good/bad demo schedules and report results.
     Demo,
     /// Validate a schedule, then generate CUDA source (.cu) for it.
@@ -50,7 +52,11 @@ fn main() -> ExitCode {
         Commands::Validate { path, verbose } => cmd_validate(&path, verbose),
         Commands::Fingerprint { path } => cmd_fingerprint(&path),
         Commands::Demo => cmd_demo(),
-        Commands::GenCuda { path, out, tensor_len } => cmd_gen_cuda(&path, &out, tensor_len),
+        Commands::GenCuda {
+            path,
+            out,
+            tensor_len,
+        } => cmd_gen_cuda(&path, &out, tensor_len),
     }
 }
 
@@ -112,7 +118,11 @@ fn cmd_demo() -> ExitCode {
 
     let cases: Vec<(&str, Schedule, bool)> = vec![
         ("good_linear", good_linear(), true),
-        ("good_nested_repeated_block", good_nested_repeated_block(), true),
+        (
+            "good_nested_repeated_block",
+            good_nested_repeated_block(),
+            true,
+        ),
         ("bad_cycle", bad_cycle(), false),
         ("bad_dangling_wait", bad_dangling_wait(), false),
         ("bad_sm_conflict", bad_sm_conflict(), false),
@@ -124,7 +134,11 @@ fn cmd_demo() -> ExitCode {
     for (name, schedule, expect_ok) in cases {
         let result = validate(&schedule);
         let actual_ok = result.is_ok();
-        let status = if actual_ok == expect_ok { "PASS" } else { "FAIL" };
+        let status = if actual_ok == expect_ok {
+            "PASS"
+        } else {
+            "FAIL"
+        };
         if actual_ok != expect_ok {
             all_ok = false;
         }
@@ -183,6 +197,11 @@ fn cmd_gen_cuda(path: &PathBuf, out: &PathBuf, tensor_len: u64) -> ExitCode {
         return ExitCode::FAILURE;
     }
 
-    println!("[titanmk] CERTIFIED '{}' (fp={}) -> {}", cert.schedule_name, &cert.fingerprint[..12], out.display());
+    println!(
+        "[titanmk] CERTIFIED '{}' (fp={}) -> {}",
+        cert.schedule_name,
+        &cert.fingerprint[..12],
+        out.display()
+    );
     ExitCode::SUCCESS
 }
