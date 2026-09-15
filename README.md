@@ -1,5 +1,7 @@
 # TitanMegaKernel
 
+TitanMegaKernel validates compute schedules before code generation and rejects unsafe execution plans before they reach hardware.
+
 [![TitanMegaKernel Proof](https://github.com/juliushill42/TitanMegaKernel/actions/workflows/verify.yml/badge.svg)](https://github.com/juliushill42/TitanMegaKernel/actions/workflows/verify.yml)
 
 ### A Recursive, Hardware-Agnostic Megakernel Schedule IR with Static Deadlock/Race Certification
