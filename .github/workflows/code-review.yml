@@ -1,0 +1,55 @@
+name: TitanU Adversarial Hardening
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+
+jobs:
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - run: semgrep scan --config=auto --error --metrics=off
+
+  secrets:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  pr-agent:
+    name: PR-Agent Adversarial Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: qodo-ai/pr-agent@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+        with:
+          pr_reviewer.extra_instructions: |
+            Adversarial review required under TitanU Universal Adversarial Hardening Standard.
+            Flag overclaims, missing tests, security issues, unbounded growth, NaN/edge failures, and mismatches between claims and code.
+            Prefer high-signal findings. Do not treat style as blocking.
+
+  evidence:
+    name: Record Evidence
+    runs-on: ubuntu-latest
+    needs: [semgrep, secrets]
+    if: always()
+    steps:
+      - run: |
+          echo "TitanU Hardening run $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+          echo "Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "Semgrep + Secret scan completed. Results above." >> $GITHUB_STEP_SUMMARY
